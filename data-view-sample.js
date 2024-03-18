@@ -1,44 +1,89 @@
 import { Td, Tr } from '@patternfly/react-table';
 import * as React from 'react';
 
-const DataViewContext = React.createContext({
-  setValues: () => undefined,
-  page: 1,
-  perPage: 25,
-  filters: {},
-  activeFilters: [],
-  data: [],
-  parseConfig: () => {},
-  setConfig: () => undefined,
-  fetchData: () => Promise.resolve(),
+// Hooks
+const usePagginationUrl = () => {
+  const navigate = useNaviaget()
+  const location = useLocation()
+  const state = useMemo(() => {
+    return {
+      perPage: 10
+    }
+  }, [location.search])
+
+  const setLocationParams = ({perPage}) => {
+    naviagte();
+  }
+
+  return state
+}
+
+const useDataViewPagination = (initialConfig) => { 
+  const [pagination, setPagination] = useState({
+    page: 0,
+    perPage: 10
+  })
+
+  const setPerPage = (perPage) => {
+    setState(prev => ({...prev, perPage}))
+  }
+
+  const setPage = (page) => {
+    setState(prev => ({...prev, page}))
+  }
+
+  return {
+    ...state,
+    setPerPage,
+    setPage
+  }
+}
+
+// Predefined bulk select component
+const DataViewBulkSelect = ({ selected, onSelect }) => <div onSelect={onSelect}>BulkSelect implementation using PF Menu</div>;
+
+// Predefined filter component
+const DataViewFilters = ({ filters, filterValues, setFilters }) => filters.map((node) => {
+  React.cloneElement(node, {onChange: (value) => setFilters(node.props.name, value), value: filterValues[node.props.name]})
 });
 
-/** DataView component
- * @param {children} required
- * @param {fetchData} optional
- */
-const DataView = ({ children, fetchData }) => {
-  const [values, setValues] = React.useState({
-    page: 1,
-    perPage: 25,
-    filets: {},
-    activeFilters: [],
-    data: [],
-    fetchData,
-  });
+// Predefined pagination component
+const DataViewPagination = ({ pagination, setPage, setPerPage }) => (
+  <Pagination
+    itemCount={count}
+    perPage={perPage}
+    page={page}
+    onSetPage={setPage}
+    onSetPerPage={setPerPage}
+  />
+);
 
-  const debouncedFetch = () => {};
+// Predefined top panel component
+const DataViewTopPanel = ({ pagination, filters, filterValues }) => {
+  <Toolbar>
+    <ToolbarItem>
+      <DataViewBulkSelect />
+    </ToolbarItem>
+    <ToolbarItem>
+      <DataViewFilters filters={filters} filterValues={filterValues} />
+    </ToolbarItem>
+    <ToolbarItem>
+      <DataViewPagination pagination={pagination} />
+    </ToolbarItem>
+  </Toolbar>;
+};
 
-  const onSetValues = React.useCallback((values) => {
-    if (values.filterBy) {
-      debouncedFetch();
-    } else {
-      fetchData();
-    }
-    setValues(values);
-  }, []);
+// User defined bottom panel component
+const DataViewBottomPanel = ({ page, perPage }) => <DataViewPagination page={page} perPage={perPage} isBottom />;
 
-  <DataViewContext.Provider value={{ ...values, setValues: onSetValues }}>{children}</DataViewContext.Provider>;
+// Predefined expandable row component mapping rows to the PF expandable table implementation
+const DataViewExpandableTableRow = ({ children, rows }) => {
+  <tbody>
+    {children}
+    {rows.map((row, index) => (
+      <tr key={index}>{row}</tr>
+    ))}
+  </tbody>;
 };
 
 // Predefined table component
@@ -55,149 +100,68 @@ const DataViewTable = () => {
   );
 };
 
-// Predefined pagination component
-const DataViewPagination = () => {
-  const DataViewContext = React.useContext(DataViewContext);
-  React.useEffect(() => {
-    const { page, perPage } = DataViewContext.parseConfig();
-    // setting initial values
-    DataViewContext.setValues({
-      page,
-      perPage,
-    });
-  }, [DataViewContext]);
-  return (
-    <Pagination
-      itemCount={count}
-      perPage={perPage}
-      page={page}
-      onSetPage={onSetPage}
-      onPerPageSelect={(page) => DataViewContext.setValues({ page })}
-    />
-  );
-};
+// Checkbox filter example implementation
+const ChexboxFilter = ({ title, onChange, name, value }) => <div onChange={() => onChange(name, ['foo'])}></div>;
 
-// Predefined filters component
-const DataViewFilters = ({ isQueryManaged }) => <div>Filters implementation using PF</div>;
+/** DataView component
+ * @param {topPanel}
+ * @param {bottomPanel}
+ * @param {children} required
+ */
+const DataView = ({ children, props }) => React.cloneElement(children, {...props});
 
-// Predefined bulk select component
-const DataViewBulkSelect = () => <div onSelect={() => null}>BulkSelect implementation using PF Menu</div>;
-
-// Predefined text filter util function
-const createTextFilter = (name, title, value) => ({
-  type: 'text',
-  name,
-  title,
-  value,
-});
-
-// Predefined checkbox filter util function
-const createCheckboxFilter = (name, title, value, options) => ({
-  type: 'checkbox',
-  name,
-  title,
-  value,
-  options,
-});
-
-// Predefined expandable row component mapping rows to the PF expandable table implementation
-const DataViewExpandableTableRow = ({ children, rows }) => {
-  <tbody>
-    {children}
-    {rows.map((row, index) => (
-      <tr key={index}>{row}</tr>
-    ))}
-  </tbody>;
-};
-
-// User defined top panel component
-const DataViewTopPanel = ({ page, perPage, filters, isQueryManaged }) => {
-  <Toolbar>
-    <ToolbarItem>
-      <DataViewBulkSelect />
-    </ToolbarItem>
-    <ToolbarItem>
-      <DataViewFilters filters={filters} isQueryManaged={isQueryManaged} />
-    </ToolbarItem>
-    <ToolbarItem>
-      <DataViewPagination page={page} perPage={perPage} />
-    </ToolbarItem>
-  </Toolbar>;
-};
-
-// User defined bottom panel component
-const DataViewBottomPanel = ({ page, perPage }) => <DataViewPagination page={page} perPage={perPage} isBottom />;
-
-// Example page defined by consumer of the DataView
 const MyPage = () => {
-  const page = useSelector(({ meta }) => meta.page);
-  const location = useLocation();
+  const { data, setData } = useState();
+  const { pagination, setPagination } = useDataViewPagination(initialValues);
+  const { filterValues, setFilterValues } = useDataViewFilters(initialValues);
+
+  React.useEffect(() => {
+    // fetch data here
+    setData(fetchedData);
+  }, [pagination, filterValues])
+
   return (
     <DataView
-      parseConfig={() => location.search}
-      setConfig={(config) => location.setParams(config)}
-      fetchData={({ pagination, sortBy }) => {
-        someAsync(pagination);
-      }}
+      isSelectable
+      filterValues={filterValues}
+      setFilterValues={setFilterValues}
+      pagination={pagination}
+      setPagination={setPagination}
       topPanel={
         <DataViewTopPanel
-          filters={{
-            values: [
-              createTextFilter('some title', 'some name', 'initial value'),
-              {
-                type: 'text',
-                name: 'input2',
-                title: 'Second input',
-                value: '',
-              },
-              createCheckboxFilter('name', 'title', undefined, [
-                {
-                  value: 'option1',
-                  title: 'First option',
-                },
-              ]),
-              {
-                type: 'checkbox',
-                name: 'check2',
-                title: 'Manual checkbox filter',
-                value: ['foo'],
-                options: [
-                  {
-                    value: 'foo',
-                    title: 'Exmaple option',
-                  },
-                ],
-              },
-            ],
-          }}
+          paginationVariant="compact"
+          actions={actionsDefinition}
+          filters={[
+              <CheckboxFilter name="state" title="State" options={[{id: 'active', label: 'Active'}]}/>,
+              <TextFilter name="name" title="Name"/>,
+          ]}
         />
       }
-      bottomPanel={<DataViewBottomPanel page={page} perPage="25" />}
+      bottomPanel={<DataViewBottomPanel />}
     >
       <DataViewTable>
         <DataViewTableHeader>
-          <DataViewTableRowHead cells={['one']} />
-        </DataViewTableHeader>
-        <DataViewTableRows>
-          <DataViewExpandableTableRow
-            key="one"
-            rows={[
-              <Tr key="one">
-                <Td>one</Td>
-              </Tr>,
-              <Tr key="two">
-                <Td>one</Td>
-              </Tr>,
-            ]}
-          >
+            <DataViewTableRowHead cells={['one']} />
+          </DataViewTableHeader>
+          <DataViewTableRows>
+            {data.map((item) =>
+              <DataViewExpandableTableRow 
+                key={item.id} 
+                rows={
+                  item.subitems.map((subitem) => (
+                    <Tr key={subitem.id}>
+                      <Td>{subitem.name}</Td>
+                    </Tr>
+                  ))
+                }
+              >
+                <Td>{item.name}</Td>
+              </DataViewExpandableTableRow>
+            )}
             <Tr>
-              <Td>one</Td>
-            </Tr>
-          </DataViewExpandableTableRow>
-          <Tr>
-            <Td>one</Td>
-          </Tr>
-        </DataViewTableRows>
+              <Td>Last not expandable row added manually</Td>
+            </Tr>          
+          </DataViewTableRows>
       </DataViewTable>
     </DataView>
   );
