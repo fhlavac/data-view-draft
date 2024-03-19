@@ -3,7 +3,7 @@ import * as React from 'react';
 
 // Hooks
 const usePagginationUrl = () => {
-  const navigate = useNaviaget()
+  const navigate = useNavigate()
   const location = useLocation()
   const state = useMemo(() => {
     return {
@@ -11,10 +11,7 @@ const usePagginationUrl = () => {
     }
   }, [location.search])
 
-  const setLocationParams = ({perPage}) => {
-    navigate(...);
-  }
-
+  const setLocationParams = ({perPage}) => navigate(...);
   return state
 }
 
