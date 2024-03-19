@@ -12,7 +12,7 @@ const usePagginationUrl = () => {
   }, [location.search])
 
   const setLocationParams = ({perPage}) => {
-    naviagte();
+    navigate(...);
   }
 
   return state
@@ -114,6 +114,7 @@ const MyPage = () => {
   const { data, setData } = useState();
   const { pagination, setPagination } = useDataViewPagination(initialValues);
   const { filterValues, setFilterValues } = useDataViewFilters(initialValues);
+  const { selected, setSelected } = useDataViewSelection();
 
   React.useEffect(() => {
     // fetch data here
@@ -127,6 +128,8 @@ const MyPage = () => {
       setFilterValues={setFilterValues}
       pagination={pagination}
       setPagination={setPagination}
+      selected={selected}
+      setSelected={setSelected}
       topPanel={
         <DataViewTopPanel
           paginationVariant="compact"
@@ -166,3 +169,5 @@ const MyPage = () => {
     </DataView>
   );
 };
+
+
