@@ -1,4 +1,3 @@
-import { Td, Tr } from '@patternfly/react-table';
 import * as React from 'react';
 
 // Hooks
@@ -55,8 +54,14 @@ const DataViewPagination = ({ pagination, setPage, setPerPage }) => (
   />
 );
 
-// Predefined top panel component
-const DataViewTopPanel = ({ pagination, filters, filterValues }) => {
+// Actions
+const actions = [
+  <DataViewAction onClick={() => console.log('first')} label="Primary action" />,
+  <DataViewAction onClick={() => console.log('second')} label="Another action" />
+];
+
+// Predefined header component
+const DataViewHeader = ({ pagination, filters, filterValues }) => {
   <Toolbar>
     <ToolbarItem>
       <DataViewBulkSelect />
@@ -65,13 +70,16 @@ const DataViewTopPanel = ({ pagination, filters, filterValues }) => {
       <DataViewFilters filters={filters} filterValues={filterValues} />
     </ToolbarItem>
     <ToolbarItem>
+      <DataViewActions actions={actions} />
+    </ToolbarItem>
+    <ToolbarItem>
       <DataViewPagination pagination={pagination} />
     </ToolbarItem>
   </Toolbar>;
 };
 
-// User defined bottom panel component
-const DataViewBottomPanel = ({ page, perPage }) => <DataViewPagination page={page} perPage={perPage} isBottom />;
+// Predefined footer component
+const DataViewFooter = ({ page, perPage }) => <DataViewPagination page={page} perPage={perPage} isBottom />;
 
 // Predefined expandable row component mapping rows to the PF expandable table implementation
 const DataViewExpandableTableRow = ({ children, rows }) => {
@@ -107,15 +115,13 @@ const ChexboxFilter = ({ title, onChange, name, value }) => <div onChange={() =>
  */
 const DataView = ({ children, props }) => React.cloneElement(children, {...props});
 
-const MyPage = () => {
-  const { data, setData } = useState();
+const MyPage = ({data, handleChange}) => {
   const { pagination, setPagination } = useDataViewPagination(initialValues);
   const { filterValues, setFilterValues } = useDataViewFilters(initialValues);
   const { selected, setSelected } = useDataViewSelection();
 
   React.useEffect(() => {
-    // fetch data here
-    setData(fetchedData);
+    handleChange(pagination, filterValues);
   }, [pagination, filterValues])
 
   return (
@@ -127,42 +133,19 @@ const MyPage = () => {
       setPagination={setPagination}
       selected={selected}
       setSelected={setSelected}
-      topPanel={
-        <DataViewTopPanel
+      header={
+        <DataViewHeader
           paginationVariant="compact"
-          actions={actionsDefinition}
+          actions={actions}
           filters={[
               <CheckboxFilter name="state" title="State" options={[{id: 'active', label: 'Active'}]}/>,
               <TextFilter name="name" title="Name"/>,
           ]}
         />
       }
-      bottomPanel={<DataViewBottomPanel />}
+      footer={<DataViewFooter />}
     >
-      <DataViewTable>
-        <DataViewTableHeader>
-            <DataViewTableRowHead cells={['one']} />
-          </DataViewTableHeader>
-          <DataViewTableRows>
-            {data.map((item) =>
-              <DataViewExpandableTableRow 
-                key={item.id} 
-                rows={
-                  item.subitems.map((subitem) => (
-                    <Tr key={subitem.id}>
-                      <Td>{subitem.name}</Td>
-                    </Tr>
-                  ))
-                }
-              >
-                <Td>{item.name}</Td>
-              </DataViewExpandableTableRow>
-            )}
-            <Tr>
-              <Td>Last not expandable row added manually</Td>
-            </Tr>          
-          </DataViewTableRows>
-      </DataViewTable>
+      <DataViewTable data={data} />
     </DataView>
   );
 };
