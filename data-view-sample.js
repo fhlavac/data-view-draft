@@ -109,8 +109,8 @@ const DataViewTable = () => {
 const ChexboxFilter = ({ title, onChange, name, value }) => <div onChange={() => onChange(name, ['foo'])}></div>;
 
 /** DataView component
- * @param {topPanel}
- * @param {bottomPanel}
+ * @param {header}
+ * @param {footer}
  * @param {children} required
  */
 const DataView = ({ children, props }) => React.cloneElement(children, {...props});
